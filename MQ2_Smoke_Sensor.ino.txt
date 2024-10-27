@@ -1,0 +1,69 @@
+// Define pins for the MQ-2 analog output and the buzzer
+const int smokeSensorPin = 5;  // Analog pin connected to MQ-2 AO
+const int buzzerPin = 20;         // Digital pin for the buzzer
+
+// Set threshold values for smoke detection
+const int lowThreshold = 4000;    // Low smoke threshold
+const int mediumThreshold = 5000; // Medium smoke threshold
+const int highThreshold = 8000;   // High smoke threshold
+
+// Number of samples for averaging
+const int numReadings = 10;      // Adjust as necessary
+int readings[numReadings];        // Array to hold readings
+int readIndex = 0;                // Current reading index
+int total = 0;                    // Total readings
+int average = 0;                  // Average reading
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(buzzerPin, OUTPUT);
+
+  // Initialize all readings to 0
+  for (int i = 0; i < numReadings; i++) {
+    readings[i] = 0;
+  }
+}
+
+void loop() {
+  // Subtract the last reading:
+  total -= readings[readIndex];
+
+  // Read the current sensor value
+  readings[readIndex] = analogRead(smokeSensorPin);
+  
+  // Add the reading to the total:
+  total += readings[readIndex];
+
+  // Advance to the next index:
+  readIndex = (readIndex + 1) % numReadings;
+
+  // Calculate the average:
+  average = total / numReadings;
+
+  // Print the average sensor value to the Serial Monitor
+  Serial.print("Average Smoke Sensor Value: ");
+  Serial.println(average);
+
+  // Determine the level of smoke detected
+  if (average > highThreshold) {
+    Serial.println("High smoke detected!");
+    tone(buzzerPin, 2000); // Loud tone for high smoke level
+    delay(1000);            // Sound for 1 second
+    noTone(buzzerPin);
+  } else if (average > mediumThreshold) {
+    Serial.println("Medium smoke detected!");
+    tone(buzzerPin, 1000); // Medium tone for medium smoke level
+    delay(500);             // Sound for 0.5 seconds
+    noTone(buzzerPin);
+  } else if (average > lowThreshold) {
+    Serial.println("Low smoke detected!");
+    tone(buzzerPin, 500);  // Low tone for low smoke level
+    delay(300);             // Sound for 0.3 seconds
+    noTone(buzzerPin);
+  } else {
+    noTone(buzzerPin);      // Turn off the buzzer if no smoke
+  }
+
+  // Wait a little before the next reading
+  delay(1000);
+}
